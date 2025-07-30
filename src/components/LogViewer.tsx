@@ -50,6 +50,32 @@ const Row: React.FC<RowProps> = ({ log }) => {
         }
     };
 
+    // Helper to render all fields
+    const renderFields = () => {
+        const fields: Record<string, any> = {
+            Timestamp: formatDate(log.timestamp),
+            Level: log.level,
+            Source: log.source,
+            Message: log.message,
+            StackTrace: log.stackTrace,
+            ...log.additionalInfo
+        };
+        return (
+            <Box>
+                {Object.entries(fields).map(([key, value]) => (
+                    value ? (
+                        <Box key={key} sx={{ mb: 1 }}>
+                            <Typography variant="subtitle2">{key}:</Typography>
+                            <Paper sx={{ p: 1, bgcolor: '#f5f5f5' }}>
+                                <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{typeof value === 'object' ? JSON.stringify(value, null, 2) : value}</pre>
+                            </Paper>
+                        </Box>
+                    ) : null
+                ))}
+            </Box>
+        );
+    };
+
     return (
         <>
             <TableRow sx={{ '& > *': { borderBottom: 'unset' } }}>
@@ -82,26 +108,7 @@ const Row: React.FC<RowProps> = ({ log }) => {
                             <Typography variant="h6" gutterBottom component="div">
                                 Details
                             </Typography>
-                            {log.stackTrace && (
-                                <Box sx={{ mb: 2 }}>
-                                    <Typography variant="subtitle2">Stack Trace:</Typography>
-                                    <Paper sx={{ p: 1, bgcolor: '#f5f5f5' }}>
-                                        <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-                                            {log.stackTrace}
-                                        </pre>
-                                    </Paper>
-                                </Box>
-                            )}
-                            {log.additionalInfo && Object.keys(log.additionalInfo).length > 0 && (
-                                <Box>
-                                    <Typography variant="subtitle2">Additional Information:</Typography>
-                                    <Paper sx={{ p: 1, bgcolor: '#f5f5f5' }}>
-                                        <pre style={{ margin: 0 }}>
-                                            {JSON.stringify(log.additionalInfo, null, 2)}
-                                        </pre>
-                                    </Paper>
-                                </Box>
-                            )}
+                            {renderFields()}
                         </Box>
                     </Collapse>
                 </TableCell>

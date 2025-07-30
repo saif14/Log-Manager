@@ -75,6 +75,18 @@ export const LogFilter: React.FC<LogFilterProps> = ({ filter, onFilterChange }) 
                     sx={{ minWidth: 150 }}
                 />
                 <TextField
+                    label="Account No"
+                    value={filter.accountNo || ''}
+                    onChange={(e) => handleChange('accountNo', e.target.value || undefined)}
+                    sx={{ minWidth: 150 }}
+                />
+                <TextField
+                    label="Unique Id"
+                    value={filter.uniqueId || ''}
+                    onChange={(e) => handleChange('uniqueId', e.target.value || undefined)}
+                    sx={{ minWidth: 150 }}
+                />
+                <TextField
                     label="Search"
                     value={filter.searchTerm || ''}
                     onChange={(e) => handleChange('searchTerm', e.target.value || undefined)}

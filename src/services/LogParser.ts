@@ -1,80 +1,11 @@
 import Papa from 'papaparse';
 import type { LogEntry, LogFilter, LogStats } from '../types/LogTypes';
-
-interface LogFormat {
-    name: string;
-    pattern: RegExp;
-    extract: (match: RegExpExecArray) => Partial<LogEntry>;
-}
+import { logFormats } from './LogFormats';
+import { extractBasicInfo, normalizeTimestamp } from './LogUtils';
 
 export class LogParser {
-    // Common log formats
-    private static logFormats: LogFormat[] = [
-        // Tomcat/Catalina format: 2023-05-29 10:15:30,123 INFO [http-nio-8080-exec-1] com.example.Class - Message
-        {
-            name: 'Tomcat/Catalina',
-            pattern: /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+(\w+)\s+\[([^\]]+)\]\s+([^\s-]+)\s+-\s+(.+)/,
-            extract: (match) => ({
-                timestamp: match[1],
-                level: match[2],
-                source: match[4],
-                message: match[5],
-                additionalInfo: { thread: match[3] }
-            })
-        },
-        // ISO DateTime with Level: 2023-05-29T10:15:30.123Z [INFO] Message
-        {
-            name: 'ISO DateTime',
-            pattern: /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:?\d{2})?)\s*\[(\w+)\]\s+(.+)/,
-            extract: (match) => ({
-                timestamp: match[1],
-                level: match[2],
-                message: match[3]
-            })
-        },
-        // Simple datetime level message: 2023-05-29 10:15:30 INFO Message
-        {
-            name: 'Simple DateTime',
-            pattern: /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)\s+(\w+)\s+(.+)/,
-            extract: (match) => ({
-                timestamp: match[1],
-                level: match[2],
-                message: match[3]
-            })
-        },
-        // Simple pipe-separated format: timestamp|level|message
-        {
-            name: 'Pipe Separated',
-            pattern: /^([^|]+)\|([^|]+)\|(.+)$/,
-            extract: (match) => ({
-                timestamp: match[1].trim(),
-                level: match[2].trim(),
-                message: match[3].trim()
-            })
-        },
-        // Common Log Format: [timestamp] level: message
-        {
-            name: 'Common Format',
-            pattern: /^\[([^\]]+)\]\s+(\w+):\s+(.+)$/,
-            extract: (match) => ({
-                timestamp: match[1],
-                level: match[2],
-                message: match[3]
-            })
-        },
-        // Syslog-like format: May 29 10:15:30 host[123] level: message
-        {
-            name: 'Syslog-like',
-            pattern: /^(\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})\s+(\S+)\[(\d+)\]\s+(\w+):\s+(.+)$/,
-            extract: (match) => ({
-                timestamp: match[1],
-                source: match[2],
-                level: match[4],
-                message: match[5],
-                additionalInfo: { pid: match[3] }
-            })
-        }
-    ];
+    // Use imported logFormats
+    private static logFormats = logFormats;
 
     static parseLogContent(content: string): LogEntry[] {
         const lines = content.split(/\r?\n/);
@@ -230,6 +161,20 @@ export class LogParser {
                 return false;
             }
 
+            if (filter.accountNo) {
+                // Check in additionalInfo for accountNo
+                if (!log.additionalInfo || log.additionalInfo.accountNo !== filter.accountNo) {
+                    return false;
+                }
+            }
+
+            if (filter.uniqueId) {
+                // Check in additionalInfo for uniqueId
+                if (!log.additionalInfo || log.additionalInfo.uniqueId !== filter.uniqueId) {
+                    return false;
+                }
+            }
+
             if (filter.searchTerm) {
                 const searchLower = filter.searchTerm.toLowerCase();
                 return (
@@ -250,7 +195,11 @@ export class LogParser {
             warningCount: 0,
             infoCount: 0,
             sourcesDistribution: {},
-            timeDistribution: {}
+            timeDistribution: {},
+            accountNoDistribution: {},
+            uniqueIdDistribution: {},
+            dateAccountNoDistribution: {},
+            dateUniqueIdDistribution: {}
         };
 
         logs.forEach(log => {
@@ -285,6 +234,28 @@ export class LogParser {
 
             stats.timeDistribution[hour] =
                 (stats.timeDistribution[hour] || 0) + 1;
+
+            // Group by accountNo (for ACCOUNT_QUERY)
+            if (log.additionalInfo && log.additionalInfo.accountNo) {
+                const acc = log.additionalInfo.accountNo;
+                stats.accountNoDistribution[acc] = (stats.accountNoDistribution[acc] || 0) + 1;
+
+                // Date-based grouping
+                const date = new Date(log.timestamp).toISOString().split('T')[0];
+                if (!stats.dateAccountNoDistribution[date]) stats.dateAccountNoDistribution[date] = {};
+                stats.dateAccountNoDistribution[date][acc] = (stats.dateAccountNoDistribution[date][acc] || 0) + 1;
+            }
+
+            // Group by uniqueId (for TRANSACTION)
+            if (log.additionalInfo && log.additionalInfo.uniqueId) {
+                const uid = log.additionalInfo.uniqueId;
+                stats.uniqueIdDistribution[uid] = (stats.uniqueIdDistribution[uid] || 0) + 1;
+
+                // Date-based grouping
+                const date = new Date(log.timestamp).toISOString().split('T')[0];
+                if (!stats.dateUniqueIdDistribution[date]) stats.dateUniqueIdDistribution[date] = {};
+                stats.dateUniqueIdDistribution[date][uid] = (stats.dateUniqueIdDistribution[date][uid] || 0) + 1;
+            }
         });
 
         return stats;

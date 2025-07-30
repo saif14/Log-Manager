@@ -19,6 +19,8 @@ export interface LogFilter {
     level?: string;
     searchTerm?: string;
     source?: string;
+    accountNo?: string;
+    uniqueId?: string;
 }
 
 export interface LogStats {
@@ -28,4 +30,8 @@ export interface LogStats {
     infoCount: number;
     sourcesDistribution: Record<string, number>;
     timeDistribution: Record<string, number>;
+    accountNoDistribution: Record<string, number>;
+    uniqueIdDistribution: Record<string, number>;
+    dateAccountNoDistribution: Record<string, Record<string, number>>;
+    dateUniqueIdDistribution: Record<string, Record<string, number>>;
 }

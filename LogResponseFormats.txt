@@ -1,0 +1,39 @@
+
+# Log Response Formats for CardManager
+
+## General Format
+All logs are pipe-separated (`|`). Most important fields:
+
+LOG_TYPE | uniqueId? | accountNo? | cardNo? | txType? | timestamp | username? | remoteAddr | eventType/action? | status | message? | response={...} | ofsResponse={...} | [other fields...]
+
+Fields marked with `?` are optional and may not appear in every log. Additional fields may be present for extensibility. Your parser should handle unknown fields gracefully.
+
+## 1. Authentication Event
+AUTH_EVENT | timestamp | username | remoteAddr | eventType | response={...} | ofsResponse={...}
+Example:
+AUTH_EVENT | 2025-07-30 12:00:00 | saif | 192.168.1.1 | TOKEN_CREATED | response={token=abc123} | ofsResponse={OFS_TOKEN_OK}
+
+## 2. Account Info Query
+ACCOUNT_QUERY | accountNo | timestamp | remoteAddr | status | response={...} | ofsResponse={...}
+Example:
+ACCOUNT_QUERY | 123456789012 | 2025-07-30 12:01:00 | 192.168.1.1 | SUCCESS | response={...} | ofsResponse={...}
+
+## 3. Card Status Query/Update
+CARD_STATUS | cardNo | timestamp | remoteAddr | action | status | response={...} | ofsResponse={...}
+Example:
+CARD_STATUS | 987654321098 | 2025-07-30 12:02:00 | 192.168.1.1 | QUERY | ERROR | response={Account not found} | ofsResponse={OFS_ERROR}
+
+## 4. Charge/Transaction Event
+TRANSACTION | uniqueId | txType | timestamp | remoteAddr | status | response={...} | ofsResponse={...}
+Example:
+TRANSACTION | UNQ123 | CHARGE | 2025-07-30 12:03:00 | 192.168.1.1 | PENDING | response={...} | ofsResponse={OFS_PENDING}
+
+## 5. Global Error/Exception
+ERROR | uniqueId | timestamp | eventType | status | message | response={...} | ofsResponse={...}
+Example:
+ERROR | UNQ123 | 2025-07-30 12:04:00 | ChargeFtException | 400 | Charge failed | response={...} | ofsResponse={OFS_CHARGE_ERROR}
+
+## 6. Other/Custom Events
+OTHER_EVENT | timestamp | remoteAddr | [custom fields...] | response={...} | ofsResponse={...}
+Example:
+OTHER_EVENT | 2025-07-30 12:05:00 | 192.168.1.1 | customField1=abc | customField2=xyz | response={...} | ofsResponse={OFS_CUSTOM}

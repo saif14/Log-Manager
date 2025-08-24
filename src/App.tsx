@@ -3,7 +3,7 @@ import { Container, Box, Typography, CssBaseline, ThemeProvider, createTheme, Ta
 import { LogUploader } from './components/LogUploader';
 import { LogViewer } from './components/LogViewer';
 import { LogFilter } from './components/LogFilter';
-import { LogStats } from './components/LogStats';
+import LogStats from './components/LogStats';
 import { RemoteLogConfiguration } from './components/RemoteLogConfig';
 import type { LogEntry, LogFilter as LogFilterType } from './types/LogTypes';
 import { LogParser } from './services/LogParser';
@@ -62,7 +62,7 @@ function App() {
           {logs.length > 0 && (
             <>
               <LogFilter filter={filter} onFilterChange={handleFilterChange} />
-              <LogStats stats={LogParser.calculateStats(filteredLogs)} />
+              <LogStats stats={LogParser.calculateStats(filteredLogs)} filteredLogs={filteredLogs} />
               <Box sx={{ mt: 3 }}>
                 <LogViewer logs={filteredLogs} />
               </Box>

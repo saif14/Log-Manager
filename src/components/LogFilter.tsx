@@ -7,9 +7,26 @@ import {
     InputLabel,
     Select,
     Stack,
+    Autocomplete,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
-import type { LogFilter as LogFilterType } from '../types/LogTypes';
+import type { LogFilter as LogFilterType, LogEventType } from '../types/LogTypes';
+
+const LOG_EVENT_TYPES: LogEventType[] = [
+    'AUTH_EVENT',
+    'ACCOUNT_QUERY',
+    'CARD_STATUS',
+    'TRANSACTION',
+    'ERROR',
+    'OTHER_EVENT'
+];
+
+const STATUS_OPTIONS = [
+    'SUCCESS',
+    'ERROR',
+    'PENDING',
+    'FAILED'
+];
 
 interface LogFilterProps {
     filter: LogFilterType;
@@ -37,7 +54,7 @@ export const LogFilter: React.FC<LogFilterProps> = ({ filter, onFilterChange }) 
 
     return (
         <Box sx={{ mb: 3 }}>
-            <Stack spacing={2} direction={{ xs: 'column', sm: 'row' }} alignItems="flex-start">
+            <Stack spacing={2} direction={{ xs: 'column', sm: 'row' }} alignItems="flex-start" flexWrap="wrap">
                 <TextField
                     type="datetime-local"
                     label="Start Date"
@@ -46,6 +63,44 @@ export const LogFilter: React.FC<LogFilterProps> = ({ filter, onFilterChange }) 
                     InputLabelProps={{ shrink: true }}
                     sx={{ minWidth: 200 }}
                 />
+                <TextField
+                    label="Card Number"
+                    value={filter.cardNo || ''}
+                    onChange={(e) => handleChange('cardNo', e.target.value)}
+                    sx={{ minWidth: 200 }}
+                />
+                <TextField
+                    label="Username"
+                    value={filter.username || ''}
+                    onChange={(e) => handleChange('username', e.target.value)}
+                    sx={{ minWidth: 200 }}
+                />
+                <FormControl sx={{ minWidth: 200 }}>
+                    <InputLabel>Event Type</InputLabel>
+                    <Select
+                        value={filter.eventType || ''}
+                        onChange={(e) => handleChange('eventType', e.target.value)}
+                        label="Event Type"
+                    >
+                        <MenuItem value="">All</MenuItem>
+                        {LOG_EVENT_TYPES.map(type => (
+                            <MenuItem key={type} value={type}>{type}</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+                <FormControl sx={{ minWidth: 200 }}>
+                    <InputLabel>Status</InputLabel>
+                    <Select
+                        value={filter.status || ''}
+                        onChange={(e) => handleChange('status', e.target.value)}
+                        label="Status"
+                    >
+                        <MenuItem value="">All</MenuItem>
+                        {STATUS_OPTIONS.map(status => (
+                            <MenuItem key={status} value={status}>{status}</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
                 <TextField
                     type="datetime-local"
                     label="End Date"

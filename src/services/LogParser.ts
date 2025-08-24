@@ -1,7 +1,6 @@
 import Papa from 'papaparse';
 import type { LogEntry, LogFilter, LogStats } from '../types/LogTypes';
 import { logFormats } from './LogFormats';
-import { extractBasicInfo, normalizeTimestamp } from './LogUtils';
 
 export class LogParser {
     // Use imported logFormats
@@ -161,16 +160,68 @@ export class LogParser {
                 return false;
             }
 
-            if (filter.accountNo) {
-                // Check in additionalInfo for accountNo
-                if (!log.additionalInfo || log.additionalInfo.accountNo !== filter.accountNo) {
+            if (filter.uniqueId) {
+                // Check multiple locations for uniqueId:
+                // 1. In additionalInfo.uniqueId (pipe-separated logs)
+                // 2. In the log message content (for mixed format logs)
+                // 3. In the level if it matches (for display purposes)
+                const hasUniqueIdInAdditionalInfo = log.additionalInfo && log.additionalInfo.uniqueId === filter.uniqueId;
+                const hasUniqueIdInMessage = log.message && log.message.includes(filter.uniqueId);
+                const hasUniqueIdInLevel = log.level === filter.uniqueId;
+                
+                if (!hasUniqueIdInAdditionalInfo && !hasUniqueIdInMessage && !hasUniqueIdInLevel) {
                     return false;
                 }
             }
 
-            if (filter.uniqueId) {
-                // Check in additionalInfo for uniqueId
-                if (!log.additionalInfo || log.additionalInfo.uniqueId !== filter.uniqueId) {
+            if (filter.accountNo) {
+                // Check multiple locations for accountNo
+                const hasAccountNoInAdditionalInfo = log.additionalInfo && log.additionalInfo.accountNo === filter.accountNo;
+                const hasAccountNoInMessage = log.message && log.message.includes(filter.accountNo);
+                const hasAccountNoInLevel = log.level === filter.accountNo;
+                
+                if (!hasAccountNoInAdditionalInfo && !hasAccountNoInMessage && !hasAccountNoInLevel) {
+                    return false;
+                }
+            }
+
+            if (filter.cardNo) {
+                // Check multiple locations for cardNo
+                const hasCardNoInAdditionalInfo = log.additionalInfo && log.additionalInfo.cardNo === filter.cardNo;
+                const hasCardNoInMessage = log.message && log.message.includes(filter.cardNo);
+                const hasCardNoInLevel = log.level === filter.cardNo;
+                
+                if (!hasCardNoInAdditionalInfo && !hasCardNoInMessage && !hasCardNoInLevel) {
+                    return false;
+                }
+            }
+
+            if (filter.username) {
+                // Check multiple locations for username
+                const hasUsernameInAdditionalInfo = log.additionalInfo && log.additionalInfo.username === filter.username;
+                const hasUsernameInMessage = log.message && log.message.includes(filter.username);
+                
+                if (!hasUsernameInAdditionalInfo && !hasUsernameInMessage) {
+                    return false;
+                }
+            }
+
+            if (filter.status) {
+                // Check multiple locations for status
+                const hasStatusInAdditionalInfo = log.additionalInfo && log.additionalInfo.status === filter.status;
+                const hasStatusInMessage = log.message && log.message.toUpperCase().includes(filter.status.toUpperCase());
+                
+                if (!hasStatusInAdditionalInfo && !hasStatusInMessage) {
+                    return false;
+                }
+            }
+
+            if (filter.eventType) {
+                // Check the eventType field and also check if it appears in the message
+                const hasEventTypeField = log.eventType === filter.eventType;
+                const hasEventTypeInMessage = log.message && log.message.includes(filter.eventType);
+                
+                if (!hasEventTypeField && !hasEventTypeInMessage) {
                     return false;
                 }
             }
@@ -180,7 +231,12 @@ export class LogParser {
                 return (
                     log.message.toLowerCase().includes(searchLower) ||
                     (log.source && log.source.toLowerCase().includes(searchLower)) ||
-                    (log.stackTrace && log.stackTrace.toLowerCase().includes(searchLower))
+                    (log.stackTrace && log.stackTrace.toLowerCase().includes(searchLower)) ||
+                    (log.level && log.level.toLowerCase().includes(searchLower)) ||
+                    (log.eventType && log.eventType.toLowerCase().includes(searchLower)) ||
+                    (log.additionalInfo && Object.values(log.additionalInfo).some(value => 
+                        typeof value === 'string' && value.toLowerCase().includes(searchLower)
+                    ))
                 );
             }
 
@@ -198,6 +254,8 @@ export class LogParser {
             timeDistribution: {},
             accountNoDistribution: {},
             uniqueIdDistribution: {},
+            eventTypeDistribution: {},
+            statusDistribution: {},
             dateAccountNoDistribution: {},
             dateUniqueIdDistribution: {}
         };
@@ -255,6 +313,17 @@ export class LogParser {
                 const date = new Date(log.timestamp).toISOString().split('T')[0];
                 if (!stats.dateUniqueIdDistribution[date]) stats.dateUniqueIdDistribution[date] = {};
                 stats.dateUniqueIdDistribution[date][uid] = (stats.dateUniqueIdDistribution[date][uid] || 0) + 1;
+            }
+
+            // Group by eventType
+            if (log.eventType) {
+                stats.eventTypeDistribution[log.eventType] = (stats.eventTypeDistribution[log.eventType] || 0) + 1;
+            }
+
+            // Group by status
+            if (log.additionalInfo && log.additionalInfo.status) {
+                const status = log.additionalInfo.status;
+                stats.statusDistribution[status] = (stats.statusDistribution[status] || 0) + 1;
             }
         });
 

@@ -1,10 +1,25 @@
+export type LogEventType = 'AUTH_EVENT' | 'ACCOUNT_QUERY' | 'CARD_STATUS' | 'TRANSACTION' | 'ERROR' | 'OTHER_EVENT';
+
 export interface LogEntry {
     timestamp: string;
     level: string;
     message: string;
     source?: string;
     stackTrace?: string;
-    additionalInfo?: Record<string, any>;
+    eventType?: LogEventType;
+    additionalInfo?: {
+        accountNo?: string;
+        cardNo?: string;
+        uniqueId?: string;
+        txType?: string;
+        username?: string;
+        remoteAddr?: string;
+        action?: string;
+        status?: string;
+        response?: string;
+        ofsResponse?: string;
+        [key: string]: any;
+    };
 }
 
 export interface LogFile {
@@ -21,6 +36,10 @@ export interface LogFilter {
     source?: string;
     accountNo?: string;
     uniqueId?: string;
+    eventType?: LogEventType;
+    cardNo?: string;
+    username?: string;
+    status?: string;
 }
 
 export interface LogStats {
@@ -32,6 +51,8 @@ export interface LogStats {
     timeDistribution: Record<string, number>;
     accountNoDistribution: Record<string, number>;
     uniqueIdDistribution: Record<string, number>;
+    eventTypeDistribution: Record<string, number>;
+    statusDistribution: Record<string, number>;
     dateAccountNoDistribution: Record<string, Record<string, number>>;
     dateUniqueIdDistribution: Record<string, Record<string, number>>;
 }

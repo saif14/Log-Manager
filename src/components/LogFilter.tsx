@@ -7,7 +7,6 @@ import {
     InputLabel,
     Select,
     Stack,
-    Autocomplete,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import type { LogFilter as LogFilterType, LogEventType } from '../types/LogTypes';
